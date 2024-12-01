@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\UserController; // Ensure UserController is correctly imported
+use App\Http\Controllers\API\RegistrationController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -22,11 +24,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Product CRUD routes
 Route::apiResource('products', ProductController::class);
 
-// User Registration Route
-Route::post('/register', [UserController::class, 'register']);
+// Register User Route
+Route::post('/register', [RegistrationController::class, 'register']);
 
-// User Login Route
-
+// Login Route
 Route::post('/login', [UserController::class, 'login']);
 
+// Logout Route
 Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
+
+Route::get('/users', [UserController::class, 'index']);
+

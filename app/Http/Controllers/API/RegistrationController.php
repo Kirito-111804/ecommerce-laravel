@@ -12,24 +12,49 @@ class RegistrationController extends Controller
 {
     public function register(Request $request)
     {
+        // Validate the incoming request
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'contact' => 'required|string|max:20', // Fixed field name
+            'contact' => 'required|string|max:20',
+            'role' => 'required|in:user,admin', // Validate role is either 'user' or 'admin'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'status' => 'fail',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'contact_information' => $request->contact, // Adjusted field name
-        ]);
+        try {
+            // Create the user, including the role
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'contact_information' => $request->contact,
+                'role' => $request->role, // Store the role in the database
+            ]);
 
-        return response()->json(['message' => 'User registered successfully!', 'user' => $user], 201);
+            // Automatically log in the user and generate an API token
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User registered successfully!',
+                'token' => $token, // Return the token
+                'role' => $user->role, // Send back the role
+            ], 201);
+
+        } catch (\Exception $e) {
+            \Log::error('Registration error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Registration failed. Please try again.',
+            ], 500);
+        }
     }
 }

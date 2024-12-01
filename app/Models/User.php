@@ -21,6 +21,7 @@ class User extends Authenticatable
         'email',
         'password',
         'contact_information',
+        'role',  // Add 'role' to the fillable array
     ];
 
     /**
