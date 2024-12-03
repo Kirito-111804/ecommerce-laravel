@@ -34,9 +34,10 @@ class RegistrationController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'contact_information' => $request->contact,
-                'role' => $request->role, // Store the role in the database
+                'contact_number' => $request->contact, // Correct field name
+                'role' => $request->role,
             ]);
+            
 
             // Automatically log in the user and generate an API token
             $token = $user->createToken('API Token')->plainTextToken;

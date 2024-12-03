@@ -20,8 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'contact_information',
-        'role',  // Add 'role' to the fillable array
+        'contact_number', // Corrected field name
+        'role',
     ];
 
     /**
