@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\UserController; // Ensure UserController is correctly imported
 use App\Http\Controllers\API\RegistrationController;
+use App\Http\Controllers\API\CartController;
 
 
 /*
@@ -35,3 +36,8 @@ Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanc
 
 Route::get('/users', [UserController::class, 'index']);
 
+Route::get('/cart', [CartController::class, 'index']);
+Route::post('/cart', [CartController::class, 'addToCart']);
+Route::put('/cart/{id}', [CartController::class, 'updateCart']);
+Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
+Route::delete('/cart', [CartController::class, 'clearCart']);
