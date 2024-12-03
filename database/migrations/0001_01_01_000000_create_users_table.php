@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('contact_information');
-            $table->enum('role', ['user', 'admin'])->default('user'); // Define role as an enum
-            $table->timestamps();
-        });
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+        $table->string('contact_number'); // Corrected field name
+        $table->enum('role', ['user', 'admin'])->default('user');
+        $table->timestamps();
+    });
     }
 
     public function down(): void

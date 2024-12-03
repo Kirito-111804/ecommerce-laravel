@@ -39,42 +39,56 @@ class UserController extends Controller
     }
 
     // User Login
-public function login(Request $request)
-{
-    // Validate the incoming request
-    $validator = Validator::make($request->all(), [
-        'email' => 'required|email',
-        'password' => 'required|min:6',
-        'role' => 'required|in:user,admin', // Validate role must be 'user' or 'admin'
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
+    public function login(Request $request)
+    {
+        try {
+            \Log::info('Login attempt:', ['email' => $request->email, 'role' => $request->role]);
+    
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+                'password' => 'required|min:6',
+                'role' => 'required|in:user,admin',
+            ]);
+    
+            if ($validator->fails()) {
+                \Log::warning('Validation failed:', ['errors' => $validator->errors()]);
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            $user = User::where('email', $request->email)->first();
+    
+            if (!$user) {
+                \Log::warning('User not found:', ['email' => $request->email]);
+                return response()->json(['message' => 'Invalid credentials or role'], 401);
+            }
+    
+            if ($user->role !== $request->role) {
+                \Log::warning('Role mismatch:', ['user_id' => $user->id, 'expected' => $request->role, 'actual' => $user->role]);
+                return response()->json(['message' => 'Invalid credentials or role'], 401);
+            }
+    
+            if (!Hash::check($request->password, $user->password)) {
+                \Log::warning('Password mismatch:', ['user_id' => $user->id]);
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+    
+            \Log::info('Login successful:', ['user_id' => $user->id]);
+    
+            return response()->json([
+                'message' => 'Login successful!',
+                'role' => $user->role,
+                'user' => $user,
+            ], 200);
+    
+        } catch (\Exception $e) {
+            \Log::error('Login error:', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'An unexpected error occurred. Please try again later.',
+            ], 500);
+        }
     }
-
-    // Find the user by email
-    $user = User::where('email', $request->email)->first();
-
-    // Check if the user exists and if the role matches
-    if (!$user || $user->role !== $request->role) {
-        return response()->json(['message' => 'Invalid credentials or role'], 401);
-    }
-
-    // If password is incorrect, return an error
-    if (!Hash::check($request->password, $user->password)) {
-        return response()->json(['message' => 'Invalid credentials'], 401);
-    }
-
-    // Generate the API token
-    $token = $user->createToken('API Token')->plainTextToken;
-
-    return response()->json([
-        'message' => 'Login successful!',
-        'token' => $token,
-        'role' => $user->role,  // Return the role in the response
-        'user' => $user,
-    ], 200);
-}
+    
+    
 
 
 
