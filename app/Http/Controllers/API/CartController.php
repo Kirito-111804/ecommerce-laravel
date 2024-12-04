@@ -105,9 +105,19 @@ class CartController extends Controller
     public function clearCart()
     {
         $userId = 1; // Replace with `Auth::id()` if authentication is enabled
-
-        Cart::where('user_id', $userId)->delete();
-
-        return response()->json(['message' => 'Cart cleared successfully.']);
+    
+        try {
+            // Attempt to delete cart items for the user
+            $deletedRows = Cart::where('user_id', $userId)->delete();
+    
+            if ($deletedRows > 0) {
+                return response()->json(['message' => 'Cart cleared successfully.'], 200);
+            } else {
+                return response()->json(['message' => 'No items found in the cart.'], 404);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to clear cart: ' . $e->getMessage()); // Log detailed error
+            return response()->json(['message' => 'Unable to clear the cart.'], 500);
+        }
     }
-}
+}    
