@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
+
 class RegistrationController extends Controller
 {
     public function register(Request $request)
@@ -49,7 +50,7 @@ class RegistrationController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            \Log::error('Registration error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Registration error: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'fail',
