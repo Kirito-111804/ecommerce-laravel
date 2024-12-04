@@ -35,3 +35,9 @@ Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanc
 
 Route::get('/users', [UserController::class, 'index']);
 
+use App\Http\Controllers\CheckoutController;
+
+// POST route to place an order
+Route::post('/checkout', [CheckoutController::class, 'placeOrder']);
+
+
