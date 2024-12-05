@@ -9,7 +9,6 @@ class Order extends Model
 {
     use HasFactory;
 
-    // Define the table name if it differs from the default "orders"
     protected $table = 'orders';
 
     // Define the fillable fields for mass assignment
@@ -31,10 +30,9 @@ class Order extends Model
         'total_amount' => 'decimal:2',
     ];
 
-    // Define the relationship with the OrderItem model if needed
-    // Assuming you have an order_items table for cart items
+    // Relationship with OrderItem model
     public function items()
     {
-        return $this->hasMany(OrderItem::class); // Adjust if you have a different model for order items
+        return $this->hasMany(OrderItem::class); // Each order has many items
     }
 }
