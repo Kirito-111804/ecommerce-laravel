@@ -14,7 +14,10 @@ class AddUserIdToSessionsTable extends Migration
     public function up()
     {
         Schema::table('sessions', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->after('id');
+            // Check if the 'user_id' column already exists
+            if (!Schema::hasColumn('sessions', 'user_id')) {
+                $table->unsignedBigInteger('user_id')->nullable()->after('id');
+            }
         });
     }
 
@@ -26,7 +29,9 @@ class AddUserIdToSessionsTable extends Migration
     public function down()
     {
         Schema::table('sessions', function (Blueprint $table) {
-            $table->dropColumn('user_id');
+            if (Schema::hasColumn('sessions', 'user_id')) {
+                $table->dropColumn('user_id');
+            }
         });
     }
 }
