@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\Log;
 
 class RegistrationController extends Controller
 {
@@ -18,7 +18,7 @@ class RegistrationController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'contact' => 'required|string|max:20',
+            'contact_information' => 'required|string|max:20',
             'role' => 'required|in:user,admin', // Validate role is either 'user' or 'admin'
         ]);
 
@@ -35,26 +35,29 @@ class RegistrationController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'contact_information' => $request->contact,
+                'contact_information' => $request->contact_information,
                 'role' => $request->role, // Store the role in the database
             ]);
 
             // Automatically log in the user and generate an API token
             $token = $user->createToken('API Token')->plainTextToken;
 
+            // Return success response with the token
             return response()->json([
                 'status' => 'success',
                 'message' => 'User registered successfully!',
-                'token' => $token, // Return the token
+                'token' => $token, // Return the API token
                 'role' => $user->role, // Send back the role
             ], 201);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Registration error: ' . $e->getMessage());
+            // Log the exception error message for debugging
+            Log::error('Registration error: ' . $e->getMessage());
 
+            // Return a user-friendly error message
             return response()->json([
                 'status' => 'fail',
-                'message' => 'Registration failed. Please try again.',
+                'message' => app()->isProduction() ? 'Registration failed. Please try again.' : 'Registration failed. Error: ' . $e->getMessage(),
             ], 500);
         }
     }
