@@ -1,67 +1,70 @@
 <?php
 
-// app/Http/Controllers/CartController.php
-
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
 use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
 
 class CartController extends Controller
 {
     /**
-     * Display the user's cart.
+     * Display the user's cart items.
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        // Retrieve the user's cart items with related products
-        $cartItems = Cart::with('product')
-                        ->where('user_id', Auth::id())  // Get the cart items for the authenticated user
-                        ->get();
+        
 
-        return view('cart.index', compact('cartItems'));
+        $cartItems = Cart::with('product')->where('user_id', Auth::id())->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $cartItems,
+        ]);
     }
 
     /**
      * Add a product to the cart.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function addToCart(Request $request, $productId)
+    public function addToCart(Request $request)
     {
-        // Validate the input (quantity is required and must be a positive integer)
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated.'], 401);
+        }
+
         $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
             'quantity' => 'required|integer|min:1',
         ]);
 
-        // Retrieve the product by its ID
-        $product = Product::findOrFail($productId);
+        $product = Product::findOrFail($request->product_id);
 
-        // Check if the product already exists in the user's cart
-        $existingCartItem = Cart::where('user_id', Auth::id())
-                                ->where('product_id', $product->id)
-                                ->first();
+        // Optional: Check product stock
+        // if ($product->stock < $request->quantity) {
+        //     return response()->json(['success' => false, 'message' => 'Insufficient stock.'], 400);
+        // }
 
-        if ($existingCartItem) {
-            // If the product exists in the cart, update the quantity
-            $existingCartItem->quantity += $request->quantity;
-            $existingCartItem->save();
-        } else {
-            // If the product doesn't exist in the cart, create a new cart item
-            Cart::create([
-                'user_id' => Auth::id(),
-                'product_id' => $product->id,
-                'quantity' => $request->quantity,
-                'price' => $product->price,  // Assuming the price is retrieved from the product
-            ]);
-        }
+        $cartItem = Cart::firstOrNew([
+            'user_id' => Auth::id(),
+            'product_id' => $product->id,
+        ]);
 
-        return redirect()->route('cart.index')->with('success', 'Product added to cart.');
+        $cartItem->quantity += $request->quantity;
+        $cartItem->price = $product->price;
+        $cartItem->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product added to cart.',
+            'data' => $cartItem,
+        ]);
     }
 
     /**
@@ -69,62 +72,79 @@ class CartController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $cartId
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateCart(Request $request, $cartId)
     {
-        // Validate the input (quantity is required and must be a positive integer)
-        $request->validate([
-            'quantity' => 'required|integer|min:1',
-        ]);
+        // if (!Auth::check()) {
+        //     return response()->json(['success' => false, 'message' => 'User not authenticated.'], 401);
+        // }
 
-        // Find the cart item by its ID
+        $request->validate(['quantity' => 'required|integer|min:1']);
+
         $cartItem = Cart::findOrFail($cartId);
 
-        // Ensure the cart item belongs to the authenticated user
         if ($cartItem->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
-        // Update the quantity of the cart item
+        // Optional: Check product stock
+        // if ($cartItem->product->stock < $request->quantity) {
+        //     return response()->json(['success' => false, 'message' => 'Insufficient stock available.'], 400);
+        // }
+
         $cartItem->quantity = $request->quantity;
         $cartItem->save();
 
-        return redirect()->route('cart.index')->with('success', 'Cart updated.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Cart item updated.',
+            'data' => $cartItem,
+        ]);
     }
 
     /**
      * Remove an item from the cart.
      *
      * @param  int  $cartId
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function removeFromCart($cartId)
     {
-        // Find the cart item by its ID
-        $cartItem = Cart::findOrFail($cartId);
-
-        // Ensure the cart item belongs to the authenticated user
-        if ($cartItem->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated.'], 401);
         }
 
-        // Delete the cart item
+        $cartItem = Cart::findOrFail($cartId);
+
+        if ($cartItem->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $cartItem->delete();
 
-        return redirect()->route('cart.index')->with('success', 'Product removed from cart.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Item removed from cart.',
+        ]);
     }
 
     /**
      * Clear the user's entire cart.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function clearCart()
     {
-        // Delete all cart items for the authenticated user
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated.'], 401);
+        }
+
         Cart::where('user_id', Auth::id())->delete();
 
-        return redirect()->route('cart.index')->with('success', 'Cart cleared.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Cart cleared.',
+        ]);
     }
 }
