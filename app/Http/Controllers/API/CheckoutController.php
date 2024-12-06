@@ -4,21 +4,23 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Models\CartItem; // Assuming you have a CartItem model
+use App\Models\OrderItem; // For saving order items
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
     public function placeOrder(Request $request)
     {
+        // Validate incoming request
         $request->validate([
             'name' => 'required|string',
             'address' => 'required|string',
             'paymentMethod' => 'required|in:COD,Card',
             'cart' => 'required|array', // Array of cart items
+            'totalAmount' => 'required|numeric', // Total amount of the order
         ]);
 
-        // Start transaction
+        // Begin a transaction to ensure atomic operations
         DB::beginTransaction();
         try {
             // Create the order
@@ -26,14 +28,13 @@ class CheckoutController extends Controller
                 'name' => $request->name,
                 'address' => $request->address,
                 'payment_method' => $request->paymentMethod,
-                'total_amount' => $request->totalAmount, // Assuming the total amount is sent from the frontend
+                'total_amount' => $request->totalAmount,
             ]);
 
-            // Save the cart items to an order_items table
+            // Save the cart items (order items)
             foreach ($request->cart as $item) {
-                // Assuming you have a cart items table or can store order items in a related table
                 $order->items()->create([
-                    'product_id' => $item['id'],
+                    'product_id' => $item['id'],  // Assuming you have a product ID
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                 ]);
@@ -42,12 +43,13 @@ class CheckoutController extends Controller
             // Commit the transaction
             DB::commit();
 
+            // Respond with success message
             return response()->json([
                 'message' => 'Order placed successfully!',
-                'order' => $order,
+                'order' => $order, // Return the order object as part of the response
             ], 201);
         } catch (\Exception $e) {
-            // Rollback in case of error
+            // Rollback the transaction in case of an error
             DB::rollBack();
 
             return response()->json([
