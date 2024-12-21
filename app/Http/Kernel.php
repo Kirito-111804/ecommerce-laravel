@@ -14,12 +14,13 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
-        \App\Http\Middleware\TrustProxies::class,
-        \Illuminate\Http\Middleware\HandleCors::class,
-        \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
-        \Illuminate\Session\Middleware\StartSession::class,
+        // \Illuminate\Http\Middleware\TrustProxies::class,
+         \Illuminate\Http\Middleware\HandleCors::class,
+        // \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
+        // \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        // \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        
     ];
 
     /**
@@ -33,6 +34,7 @@ class Kernel extends HttpKernel
     protected $middlewareGroups = [
         'web' => [
             // Web middleware group here
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class
         ],
 
         'api' => [
@@ -50,10 +52,11 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth' => \App\Http\Middleware\Authenticate::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        // 'auth' => \App\Http\Middleware\Authenticate::class,
+        // 'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        // 'guest' => \Illuminate\Auth\Middleware\RedirectIfAuthenticated::class,
+        // 'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        // 'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+         'cors' => \Illuminate\Http\Middleware\HandleCors::class,
     ];
 }

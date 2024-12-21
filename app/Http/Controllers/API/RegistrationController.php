@@ -7,54 +7,58 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class RegistrationController extends Controller
 {
     public function register(Request $request)
-{
-    // Validate the incoming request
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email',
-        'password' => 'required|min:6',
-        'contact_number' => 'required|string|max:20', // Updated to match the frontend and database
-        'role' => 'required|in:user,admin',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'fail',
-            'errors' => $validator->errors(),
-        ], 422);
-    }
-
-    try {
-        // Create the user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'contact_number' => $request->contact_number, // Updated to match the database
-            'role' => $request->role,
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+            'contact_information' => 'required|string|max:20',
+            'role' => 'required|in:user,admin', // Validate role is either 'user' or 'admin'
         ]);
 
-        \Log::info('User registered successfully:', ['user_id' => $user->id]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'fail',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User registered successfully!',
-            'user' => $user,
-        ], 201);
-    } catch (\Exception $e) {
-        \Log::error('Registration Error:', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
+        try {
+            // Create the user, including the role
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'contact_information' => $request->contact_information,
+                'role' => $request->role, // Store the role in the database
+            ]);
 
-        return response()->json([
-            'status' => 'fail',
-            'message' => 'Registration failed. Please try again.',
-        ], 500);
+            // Automatically log in the user and generate an API token
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            // Return success response with the token
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User registered successfully!',
+                'token' => $token, // Return the API token
+                'role' => $user->role, // Send back the role
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Log the exception error message for debugging
+            Log::error('Registration error: ' . $e->getMessage());
+
+            // Return a user-friendly error message
+            return response()->json([
+                'status' => 'fail',
+                'message' => app()->isProduction() ? 'Registration failed. Please try again.' : 'Registration failed. Error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
 }

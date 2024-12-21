@@ -3,10 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ProductController;
-use App\Http\Controllers\API\UserController; // Ensure UserController is correctly imported
+use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\RegistrationController;
 use App\Http\Controllers\API\CartController;
-
+use App\Http\Controllers\CheckoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,19 +25,27 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Product CRUD routes
 Route::apiResource('products', ProductController::class);
 
-// Register User Route
+// Authentication routes
 Route::post('/register', [RegistrationController::class, 'register']);
-
-// Login Route
 Route::post('/login', [UserController::class, 'login']);
-
-// Logout Route
+Route::get('/login', function () {
+    return response()->json([
+        'message' => 'Please Login.',
+    ], 401);
+})-> name('login');
 Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
 
-Route::get('/users', [UserController::class, 'index']);
+// User management routes
+Route::get('/users', [UserController::class, 'index'])->middleware('auth:sanctum');
 
-Route::get('/cart', [CartController::class, 'index']);
-Route::post('/cart', [CartController::class, 'addToCart']);
-Route::put('/cart/{id}', [CartController::class, 'updateCart']);
-Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
-Route::delete('/cart', [CartController::class, 'clearCart']);
+// Checkout route
+Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->middleware('auth:sanctum');
+
+// Cart routes
+Route::middleware('auth:sanctum')->prefix('cart')->group(function () {
+    Route::get('/', [CartController::class, 'index']); // View cart items
+    Route::post('/', [CartController::class, 'addToCart']); // Add item to cart
+    Route::put('/{id}', [CartController::class, 'updateCart']); // Update item in cart
+    Route::delete('/{id}', [CartController::class, 'removeFromCart']); // Remove item from cart
+    Route::delete('/', [CartController::class, 'clearCart']); // Clear all items in cart
+});
